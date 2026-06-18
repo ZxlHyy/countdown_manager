@@ -23,7 +23,7 @@ void main() {
       const MaterialApp(
         home: Countdown(
           key: ValueKey('paused-countdown'),
-          isPause: true,
+          paused: true,
           duration: Duration(minutes: 1, seconds: 5),
         ),
       ),
@@ -60,6 +60,65 @@ void main() {
     expect(find.text('Done'), findsOneWidget);
   });
 
+  testWidgets('countdown controller supports pause and resume', (tester) async {
+    final controller = TimerController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countdown(
+          key: const ValueKey('controlled-countdown'),
+          duration: const Duration(seconds: 3),
+          controller: controller,
+        ),
+      ),
+    );
+
+    expect(controller.isRunning, isTrue);
+    expect(find.text('00:00:03'), findsOneWidget);
+
+    controller.pause();
+    await tester.pump();
+
+    expect(controller.isPaused, isTrue);
+    expect(find.text('00:00:03'), findsOneWidget);
+
+    controller.resume();
+    await tester.pump();
+
+    expect(controller.isRunning, isTrue);
+  });
+
+  testWidgets('countdown paused updates pause and resume existing timer', (
+    tester,
+  ) async {
+    final controller = TimerController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countdown(
+          key: const ValueKey('declarative-countdown'),
+          duration: const Duration(seconds: 3),
+          controller: controller,
+          paused: true,
+        ),
+      ),
+    );
+
+    expect(controller.isPaused, isTrue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countdown(
+          key: const ValueKey('declarative-countdown'),
+          duration: const Duration(seconds: 3),
+          controller: controller,
+        ),
+      ),
+    );
+
+    expect(controller.isRunning, isTrue);
+  });
+
   testWidgets('renders a countup from zero', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: Countup(key: ValueKey('countup'))),
@@ -88,7 +147,7 @@ void main() {
       const MaterialApp(
         home: Countup(
           key: ValueKey('paused-countup'),
-          isPause: true,
+          paused: true,
           initialDuration: Duration(seconds: 3),
         ),
       ),
@@ -109,6 +168,83 @@ void main() {
       ),
     );
 
+    expect(find.text('00:00:00'), findsOneWidget);
+  });
+
+  testWidgets('countup controller supports pause and resume', (tester) async {
+    final controller = TimerController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countup(
+          key: const ValueKey('controlled-countup'),
+          controller: controller,
+        ),
+      ),
+    );
+
+    expect(controller.isRunning, isTrue);
+    expect(find.text('00:00:00'), findsOneWidget);
+
+    controller.pause();
+    await tester.pump();
+
+    expect(controller.isPaused, isTrue);
+    expect(find.text('00:00:00'), findsOneWidget);
+
+    controller.resume();
+    await tester.pump();
+
+    expect(controller.isRunning, isTrue);
+  });
+
+  testWidgets('countup paused updates pause and resume existing timer', (
+    tester,
+  ) async {
+    final controller = TimerController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countup(
+          key: const ValueKey('declarative-countup'),
+          controller: controller,
+          paused: true,
+        ),
+      ),
+    );
+
+    expect(controller.isPaused, isTrue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countup(
+          key: const ValueKey('declarative-countup'),
+          controller: controller,
+        ),
+      ),
+    );
+
+    expect(controller.isRunning, isTrue);
+  });
+
+  testWidgets('countup calls onFinish at maxDuration', (tester) async {
+    var finished = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Countup(
+          key: const ValueKey('max-countup'),
+          maxDuration: Duration.zero,
+          onFinish: () {
+            finished = true;
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(finished, isFalse);
     expect(find.text('00:00:00'), findsOneWidget);
   });
 }

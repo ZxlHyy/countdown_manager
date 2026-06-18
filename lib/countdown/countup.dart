@@ -11,18 +11,20 @@ typedef CountupWidgetBuilder =
     );
 
 class Countup extends StatefulWidget {
-  final bool isPause;
+  final bool paused;
   final Duration initialDuration;
   final Duration? maxDuration;
+  final TimerController? controller;
   final VoidCallback? onFinish;
   final TextStyle? timeStyle;
   final CountupWidgetBuilder? timerWidgetBuilder;
 
   const Countup({
     required super.key,
-    this.isPause = false,
+    this.paused = false,
     this.initialDuration = Duration.zero,
     this.maxDuration,
+    this.controller,
     this.onFinish,
     this.timeStyle,
     this.timerWidgetBuilder,
@@ -58,13 +60,11 @@ class Countup extends StatefulWidget {
 }
 
 class CountupState extends State<Countup> {
-  late bool _isPause;
   late Key _key;
   late ValueNotifier<Duration> _notifier;
 
   @override
   void initState() {
-    _isPause = widget.isPause;
     _key = widget.key!;
     _startTimer();
     super.initState();
@@ -75,39 +75,43 @@ class CountupState extends State<Countup> {
     super.didUpdateWidget(oldWidget);
     if (widget.effectiveInitialDuration != oldWidget.effectiveInitialDuration ||
         widget.effectiveMaxDuration != oldWidget.effectiveMaxDuration ||
-        widget.isPause != oldWidget.isPause ||
+        widget.controller != oldWidget.controller ||
         widget.key != oldWidget.key) {
-      if (!_isPause) {
-        CountdownManager.instance.stopCountupTimer(_key);
-      }
-      _isPause = widget.isPause;
+      CountdownManager.instance.stopCountupTimer(_key);
       _key = widget.key!;
       _startTimer();
+      return;
+    }
+
+    if (widget.paused != oldWidget.paused) {
+      if (widget.paused) {
+        CountdownManager.instance.pauseTimer(_key);
+      } else {
+        CountdownManager.instance.resumeTimer(_key);
+      }
     }
   }
 
   @override
   void dispose() {
-    if (!_isPause) {
-      CountdownManager.instance.stopCountupTimer(_key);
-    }
+    CountdownManager.instance.stopCountupTimer(_key);
     super.dispose();
   }
 
   void _startTimer() {
-    if (!_isPause) {
-      CountdownManager.instance.startCountupTimer(
-        _key,
-        widget.effectiveInitialDuration,
-        maxDuration: widget.effectiveMaxDuration,
-        onFinish: () {
-          if (!widget.isFinished) {
-            widget.onFinish?.call();
-          }
-        },
-      );
-      _notifier = CountdownManager.instance.currentCountup(_key)!;
-    }
+    CountdownManager.instance.startCountupTimer(
+      _key,
+      widget.effectiveInitialDuration,
+      maxDuration: widget.effectiveMaxDuration,
+      onFinish: () {
+        if (!widget.isFinished) {
+          widget.onFinish?.call();
+        }
+      },
+      controller: widget.controller,
+      isPaused: widget.paused,
+    );
+    _notifier = CountdownManager.instance.currentCountup(_key)!;
   }
 
   String _formatDuration(Duration duration) {
@@ -127,18 +131,6 @@ class CountupState extends State<Countup> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isPause) {
-      final duration = widget.effectiveInitialDuration;
-      final dateText = _formatDuration(duration);
-      return widget.timerWidgetBuilder?.call(context, duration, dateText) ??
-          Text(
-            dateText,
-            style: const TextStyle(
-              height: 1.1,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ).merge(widget.timeStyle),
-          );
-    }
     return ValueListenableBuilder<Duration>(
       valueListenable: _notifier,
       builder: (context, elapsedTime, child) {

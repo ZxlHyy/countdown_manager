@@ -11,8 +11,9 @@ typedef CountdownWidgetBuilder =
     );
 
 class Countdown extends StatefulWidget {
-  final bool isPause;
+  final bool paused;
   final Duration duration;
+  final TimerController? controller;
   final VoidCallback? onFinish;
   final String? zeroText;
   final TextStyle? timeStyle;
@@ -20,8 +21,9 @@ class Countdown extends StatefulWidget {
 
   const Countdown({
     required super.key,
-    this.isPause = false,
+    this.paused = false,
     required this.duration,
+    this.controller,
     this.onFinish,
     this.zeroText,
     this.timeStyle,
@@ -46,13 +48,11 @@ class Countdown extends StatefulWidget {
 }
 
 class CountdownState extends State<Countdown> {
-  late bool _isPause;
   late Key _key;
   late ValueNotifier<Duration> _notifier;
 
   @override
   void initState() {
-    _isPause = widget.isPause;
     _key = widget.key!;
     _startTimer();
     super.initState();
@@ -62,34 +62,42 @@ class CountdownState extends State<Countdown> {
   void didUpdateWidget(covariant Countdown oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.effectiveDuration != oldWidget.effectiveDuration ||
-        widget.isPause != oldWidget.isPause ||
+        widget.controller != oldWidget.controller ||
         widget.key != oldWidget.key) {
-      if (!_isPause) {
-        CountdownManager.instance.stopTimer(_key);
-      }
-      _isPause = widget.isPause;
+      CountdownManager.instance.stopTimer(_key);
       _key = widget.key!;
       _startTimer();
+      return;
+    }
+
+    if (widget.paused != oldWidget.paused) {
+      if (widget.paused) {
+        CountdownManager.instance.pauseTimer(_key);
+      } else {
+        CountdownManager.instance.resumeTimer(_key);
+      }
     }
   }
 
   @override
   void dispose() {
-    if (!_isPause) {
-      CountdownManager.instance.stopTimer(_key);
-    }
+    CountdownManager.instance.stopTimer(_key);
     super.dispose();
   }
 
   void _startTimer() {
-    if (!_isPause) {
-      CountdownManager.instance.startTimer(_key, widget.effectiveDuration, () {
+    CountdownManager.instance.startTimer(
+      _key,
+      widget.effectiveDuration,
+      () {
         if (!widget.isFinished) {
           widget.onFinish?.call();
         }
-      });
-      _notifier = CountdownManager.instance.current(_key)!;
-    }
+      },
+      controller: widget.controller,
+      isPaused: widget.paused,
+    );
+    _notifier = CountdownManager.instance.current(_key)!;
   }
 
   String _formatDuration(Duration duration) {
@@ -112,18 +120,6 @@ class CountdownState extends State<Countdown> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isPause) {
-      final duration = widget.effectiveDuration;
-      final dateText = _formatDuration(duration);
-      return widget.timerWidgetBuilder?.call(context, duration, dateText) ??
-          Text(
-            dateText,
-            style: const TextStyle(
-              height: 1.1,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ).merge(widget.timeStyle),
-          );
-    }
     return ValueListenableBuilder<Duration>(
       valueListenable: _notifier,
       builder: (context, remainingTime, child) {
