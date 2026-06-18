@@ -4,6 +4,24 @@ version: 0.1.0
 
 homepage: https://github.com/ZxlHyy/countdown_manager
 repository: https://github.com/ZxlHyy/countdown_manager
+issue_tracker: https://github.com/ZxlHyy/countdown_manager/issues
+documentation: https://pub.dev/documentation/countdown_manager/latest/
+topics:
+  - countdown
+  - countup
+  - timer
+
+screenshots:
+  - description: Countdown Manager.
+    path: images/countdown_manager.jpg
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
 
 environment:
   sdk: ^3.9.2
