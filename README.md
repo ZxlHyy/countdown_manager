@@ -7,6 +7,9 @@ a monotonic clock instead of accumulating periodic ticks. This keeps displayed
 time correct after delayed ticks, pause/resume cycles, and app background
 resumes.
 
+[![pub package](https://img.shields.io/pub/v/countdown_manager.svg)](https://pub.dev/packages/countdown_manager)
+
+![示例](https://raw.githubusercontent.com/ZxlHyy/countdown_manager/master/images/countdown_manager.jpg)
 ## Features
 
 - `Countdown` and `Countup` widgets.
